@@ -130,7 +130,7 @@ keyToRST (label, (src, _)) = do
   let label'' = if ':' `elem` (render Nothing label' :: String)
                    then char '`' <> label' <> char '`'
                    else label'
-  return $ nowrap $ ".. _" <> label'' <> ": " <> text src
+  return $ nowrap $ "..  _" <> label'' <> ": " <> text src
 
 -- | Return RST representation of notes.
 notesToRST :: PandocMonad m => [[Block]] -> RST m Doc
@@ -142,7 +142,7 @@ notesToRST notes =
 noteToRST :: PandocMonad m => Int -> [Block] -> RST m Doc
 noteToRST num note = do
   contents <- blockListToRST note
-  let marker = ".. [" <> text (show num) <> "]"
+  let marker = "..  [" <> text (show num) <> "]"
   return $ nowrap $ marker $$ nest 3 contents
 
 -- | Return RST representation of picture reference table.
@@ -163,7 +163,7 @@ pictToRST (label, (attr, src, _, mbtarget)) = do
                    then empty
                    else ":class: " <> text (unwords cls)
   return $ nowrap
-         $ ".. |" <> label' <> "| image:: " <> text src $$ hang 3 empty (classes $$ dims)
+         $ "..  |" <> label' <> "| image:: " <> text src $$ hang 4 empty (classes $$ dims)
          $$ case mbtarget of
                  Nothing -> empty
                  Just t  -> "   :target: " <> text t
@@ -211,8 +211,8 @@ blockToRST :: PandocMonad m
 blockToRST Null = return empty
 blockToRST (Div attr bs) = do
   contents <- blockListToRST bs
-  let startTag = ".. raw:: html" $+$ nest 3 (tagWithAttrs "div" attr)
-  let endTag = ".. raw:: html" $+$ nest 3 "</div>"
+  let startTag = "..  raw:: html" $+$ nest 3 (tagWithAttrs "div" attr)
+  let endTag = "..  raw:: html" $+$ nest 3 "</div>"
   return $ blankline <> startTag $+$ contents $+$ endTag $$ blankline
 blockToRST (Plain inlines) = inlineListToRST inlines
 -- title beginning with fig: indicates that the image is a figure
@@ -225,7 +225,7 @@ blockToRST (Para [Image attr txt (src,'f':'i':'g':':':tit)]) = do
       classes = if null cls
                    then empty
                    else ":figclass: " <> text (unwords cls)
-  return $ hang 3 ".. " (fig $$ alt $$ classes $$ dims $+$ capt) $$ blankline
+  return $ hang 4 "..  " (fig $$ alt $$ classes $$ dims $+$ capt) $$ blankline
 blockToRST (Para inlines)
   | LineBreak `elem` inlines =
       linesToLineBlock $ splitBy (==LineBreak) inlines
@@ -236,7 +236,7 @@ blockToRST (LineBlock lns) =
   linesToLineBlock lns
 blockToRST (RawBlock f@(Format f') str)
   | f == "rst" = return $ text str
-  | otherwise  = return $ blankline <> ".. raw:: " <>
+  | otherwise  = return $ blankline <> "..  raw:: " <>
                     text (map toLower f') $+$
                     nest 3 (text str) $$ blankline
 blockToRST HorizontalRule =
@@ -252,7 +252,7 @@ blockToRST (Header level (name,classes,_) inlines) = do
           let headerChar = if level > 5 then ' ' else "=-~^'" !! (level - 1)
           let border = text $ replicate (offset contents) headerChar
           let anchor | null name || name == autoId = empty
-                     | otherwise = ".. _" <> text name <> ":" $$ blankline
+                     | otherwise = "..  _" <> text name <> ":" $$ blankline
           return $ nowrap $ anchor $$ contents $$ border $$ blankline
     else do
           let rub     = "rubric:: " <> contents
@@ -260,7 +260,7 @@ blockToRST (Header level (name,classes,_) inlines) = do
                     | otherwise    = ":name: " <> text name
           let cls   | null classes = empty
                     | otherwise    = ":class: " <> text (unwords classes)
-          return $ nowrap $ hang 3 ".. " (rub $$ name' $$ cls) $$ blankline
+          return $ nowrap $ hang 4 "..  " (rub $$ name' $$ cls) $$ blankline
 blockToRST (CodeBlock (_,classes,kvs) str) = do
   opts <- gets stOptions
   let tabstop = writerTabStop opts
@@ -275,7 +275,7 @@ blockToRST (CodeBlock (_,classes,kvs) str) = do
           (case [c | c <- classes,
                      c `notElem` ["sourceCode","literate","numberLines"]] of
              []       -> "::"
-             (lang:_) -> (".. code:: " <> text lang) $$ numberlines)
+             (lang:_) -> ("..  code:: " <> text lang) $$ numberlines)
           $+$ nest tabstop (text str) $$ blankline
 blockToRST (BlockQuote blocks) = do
   tabstop <- gets $ writerTabStop . stOptions
@@ -295,7 +295,7 @@ blockToRST (Table caption aligns widths headers rows) = do
             headers rows
   return $ if null caption
               then tbl $$ blankline
-              else (".. table:: " <> caption') $$ blankline $$ nest 3 tbl $$
+              else ("..  table:: " <> caption') $$ blankline $$ nest 3 tbl $$
                    blankline
 blockToRST (BulletList items) = do
   contents <- mapM bulletListItemToRST items
@@ -321,7 +321,7 @@ blockToRST (DefinitionList items) = do
 bulletListItemToRST :: PandocMonad m => [Block] -> RST m Doc
 bulletListItemToRST items = do
   contents <- blockListToRST items
-  return $ hang 3 "-  " $ contents <> cr
+  return $ hang 4 "-   " $ contents <> cr
 
 -- | Convert ordered list item (a list of blocks) to RST.
 orderedListItemToRST :: PandocMonad m
@@ -517,9 +517,9 @@ inlineToRST (Math t str) = do
   return $ if t == InlineMath
               then ":math:`" <> text str <> "`"
               else if '\n' `elem` str
-                   then blankline $$ ".. math::" $$
+                   then blankline $$ "..  math::" $$
                         blankline $$ nest 3 (text str) $$ blankline
-                   else blankline $$ (".. math:: " <> text str) $$ blankline
+                   else blankline $$ ("..  math:: " <> text str) $$ blankline
 inlineToRST il@(RawInline f x)
   | f == "rst" = return $ text x
   | f == "latex" || f == "tex" = do
